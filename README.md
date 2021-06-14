@@ -8,3 +8,6 @@ This autoclicker is currently very barebones, it currently consits of:
 * Max / Min CPS (arrow up/down to change)
 * Toggle Autoclicker (X key)
 * Terminal-based UI
+
+# Note
+This is a part of a school project.
