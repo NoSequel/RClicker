@@ -80,7 +80,7 @@ impl ClickerData {
 
                                 data.enigo.mouse_down(MouseButton::Left);
         
-                                thread::sleep(Duration::from_millis(1000 / current));
+                                thread::sleep(Duration::from_millis((1000 / current) - data.debounce_time));
                             }
                         })
                     }
