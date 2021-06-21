@@ -25,6 +25,8 @@ pub struct ClickerData {
     pub min_cps: u64,
     pub max_cps: u64,
 
+    pub debounce_time: u64,
+
     pub jitter_intensity_horizontal: i32,
     pub jitter_intensity_vertical: i32,
 
@@ -41,6 +43,9 @@ impl ClickerData {
 
             min_cps: 12,
             max_cps: 15,
+
+            debounce_time: 0,
+
             enigo: Enigo::new(),
             key_listeners: Rc::new(RefCell::new(vec![
                 RefCell::new(
@@ -49,8 +54,6 @@ impl ClickerData {
                         callback: Box::new(| data | {
                             data.enabled = !data.enabled;
                             thread::sleep(Duration::from_millis(200));
-
-                            println!("{}", data.enabled);
                         })
                     }
                 ),
@@ -72,6 +75,8 @@ impl ClickerData {
                                 if data.jitter_intensity_vertical != 0 {
                                     data.enigo.mouse_move_relative(0, rand.gen_range(-data.jitter_intensity_vertical..data.jitter_intensity_vertical));
                                 }
+
+                                thread::sleep(Duration::from_millis(data.debounce_time));
 
                                 data.enigo.mouse_down(MouseButton::Left);
         

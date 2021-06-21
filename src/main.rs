@@ -39,6 +39,11 @@ fn create_ui(ui: &mut Ui, clicker: &mut ClickerData) {
                 .range(0..=20)
                 .build(&ui, &mut clicker.jitter_intensity_vertical);
 
+            Slider::new(im_str!("debounce time (experimental)"))
+                .range(0..=20)
+                .build(&ui, &mut clicker.debounce_time);
+
+
             ui.separator();
 
             ui.text(format!("clicker enabled: {}", clicker.enabled));
