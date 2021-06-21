@@ -5,7 +5,7 @@ use clicker::ClickerData;
 use imgui::*;
 
 fn main() {
-    let system = support::init(file!(),  &[768f64, 400f64]);
+    let system = support::init(file!(), &[768f64, 400f64]);
     let mut clicker = ClickerData::new();
 
     system.main_loop(move |_, ui| {
@@ -43,11 +43,16 @@ fn create_ui(ui: &mut Ui, clicker: &mut ClickerData) {
                 .range(0..=20)
                 .build(&ui, &mut clicker.debounce_time);
 
-
             ui.separator();
 
             ui.text(format!("clicker enabled: {}", clicker.enabled));
-            ui.text(format!("horizontal jitter enabled: {}", clicker.jitter_intensity_horizontal != 0));
-            ui.text(format!("veritcal jitter enabled: {}", clicker.jitter_intensity_vertical != 0));
+            ui.text(format!(
+                "horizontal jitter enabled: {}",
+                clicker.jitter_intensity_horizontal != 0
+            ));
+            ui.text(format!(
+                "veritcal jitter enabled: {}",
+                clicker.jitter_intensity_vertical != 0
+            ));
         });
 }
