@@ -8,5 +8,9 @@ This autoclicker is currently very barebones, it currently consits of:
 * Max / Min CPS control (within the GUI)
 * Toggle Autoclicker (X key)
 
+# Compilation
+You can compile `RClicker` using the followind command, which will compile the target to parent/target/release/clicker.exe:
+- ``cargo build --release``
+
 # Note
 This is a part of a school project.
