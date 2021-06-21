@@ -1,3 +1,4 @@
+<img src="https://raw.githubusercontent.com/NoSequel/RClicker/main/screenshots/rclicker.PNG" width="40%" align="right">
 <h1 align="center">RClicker</h1>
 <p align="center">is an autoclicker written in Rust, written to learn more about the Rust programming language.</p><br>
 
