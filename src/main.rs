@@ -1,87 +1,162 @@
-extern crate user32;
+mod clicker;
+use clicker::ClickerData;
 
-use enigo::{
-    Enigo,
-    MouseButton,
-    MouseControllable
-};
-
-use std::{
-    io::{stdout, Write},
-    time::Duration,
-};
-
-use user32::GetKeyState;
-use std::thread;
-use rand::Rng;
-
-static mut MAX_CPS: u64 = 15;
-static mut MIN_CPS: u64 = 13;
-static mut ENABLED: bool = false;
-
-fn main() {
-    let mut enigo = Enigo::new();
-    let mut random = rand::thread_rng();
-    let mut stdout = stdout();
-
-    let mut listener = KeyListener {
-        key_code: 0x01,
-        callback: || {
-            unsafe {
-                let current: u64 = random.gen_range(MIN_CPS..MAX_CPS);
-    
-                enigo.mouse_up(MouseButton::Left);
-                enigo.mouse_down(MouseButton::Left);
-    
-                thread::sleep(Duration::from_millis(1000 / current));
-            }
+use coffee::{
+    input::{
+        mouse::{
+            Mouse
         }
-    };
+    },
+    graphics::{
+        Color,
+        Frame,
+        HorizontalAlignment,
+        Window,
+        WindowSettings
+    },
 
-    unsafe {
-        loop {
-            print!(
-                "\r{} {} {}",
-                "Autoclicker", 
-                " [Toggled]",
-                format!(" [{}] [{}]", MAX_CPS, MIN_CPS)
-            );
+    load::{
+        Task
+    },
 
-            stdout.flush().unwrap();
+    Game,
+    Result,
+    Timer,
+    ui::{
+        Renderer,
+        Element,
+        Column,
+        UserInterface,
+        slider,
+        Row,
+        Text,
+        Slider,
+        Align,
+        Justify
+    }
+};
 
-            if GetKeyState(0x58) < 0 {
-                ENABLED = !ENABLED;
-                thread::sleep(Duration::from_millis(125));
-            }
+use std::ops::RangeInclusive;
 
-            if GetKeyState(0x26) < 0 {
-                MAX_CPS += 1;
-                MIN_CPS += 1;
+fn main() -> Result<()> {
+    <ClickerGUI as UserInterface>::run(WindowSettings {
+        title: String::from("RClicker"),
+        size: (768, 400),
+        resizable: false,
+        fullscreen: false,
+        maximized: false
+    })
+}
 
-                thread::sleep(Duration::from_millis(125));
-            }
+enum Message {
+    MinClicksChanged(f32),
+    MaxClicksChanged(f32),
+}
 
-            if GetKeyState(0x28) < 0{
-                MAX_CPS -= 1;
-                MIN_CPS -= 1;
+struct ClickerGUI {
+    data: ClickerData,
 
-                thread::sleep(Duration::from_millis(125));
-            }
+    min_cps_slider: slider::State,
+    max_cps_slider: slider::State,
 
-            if ENABLED && GetKeyState(listener.key_code) < 0 {
-                listener.process_events();
+    //toggle_button: button::State // work in progress, not supported yet.
+}
+
+impl UserInterface for ClickerGUI {
+    type Message = Message;
+    type Renderer = Renderer;
+
+    fn react(&mut self, msg: Message, _window: &mut Window) {
+        match msg {
+            Message::MinClicksChanged(data) => {
+                self.data.min_cps = data as u64;
+            },
+
+            Message::MaxClicksChanged(data) => {
+                self.data.max_cps = data as u64;
             }
         }
     }
-}
 
-struct KeyListener<CB> where CB : FnMut() {
-    key_code: i32,
-    callback: CB
-}
+    fn layout(&mut self, window: &Window) -> Element<Message> {
+        let mut controls = Column::new().max_width(250).spacing(20);
 
-impl<CB> KeyListener<CB> where CB : FnMut() {
-    fn process_events(&mut self) {
-        (self.callback)();
+        controls = controls.push(
+            slider_with_label(
+                "minimum cps: ",
+                &mut self.min_cps_slider,
+                5.0..=25.0,
+                self.data.min_cps as f32,
+                &ToString::to_string(&self.data.min_cps),
+                move |data| {
+                    Message::MinClicksChanged(data)
+                }   
+            )
+        );
+
+        controls = controls.push(
+            slider_with_label(
+                "maximum cps: ",
+                &mut self.max_cps_slider,
+                5.0..=25.0,
+                self.data.max_cps as f32,
+                &ToString::to_string(&self.data.max_cps),
+                move |data| {
+                    Message::MaxClicksChanged(data)
+                }   
+            )
+        );
+
+        Column::new()
+            .width(window.width() as u32)
+            .height(window.height() as u32)
+            .padding(20)
+            .align_items(Align::End)
+            .justify_content(Justify::SpaceBetween)
+            .push(controls)
+            .into()
     }
+}
+
+impl Game for ClickerGUI {
+    type Input = Mouse;
+    type LoadingScreen = ();
+
+    fn load(_window: &Window) -> Task<ClickerGUI> {
+        Task::succeed(|| ClickerGUI {
+            data: ClickerData::new(),
+
+            min_cps_slider: slider::State::new(),
+            max_cps_slider: slider::State::new()
+        })
+    }
+
+    fn draw(&mut self, frame: &mut Frame, _timer: &Timer) {
+        frame.clear(Color {
+            r: 0.3,
+            g: 0.3,
+            b: 0.6,
+            a: 1.0,
+        });
+        
+        self.data.handle_listeners();
+    }
+}
+
+fn slider_with_label<'a>(label: &str, state: &'a mut slider::State, range: RangeInclusive<f32>, value: f32, format: &str, on_change: fn(f32) -> Message,) -> Element<'a, Message> {
+    Column::new()
+        .spacing(10)
+        .push(Text::new(label))
+        .push(
+            Row::new()
+                .spacing(10)
+                .push(Slider::new(state, range, value, on_change))
+                .push(
+                    Text::new(format)
+                        .width(150)
+                        .height(50)
+                        .horizontal_alignment(HorizontalAlignment::Center),
+                ),
+        )
+        .into()
 }

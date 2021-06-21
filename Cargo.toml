@@ -8,5 +8,7 @@ edition = "2018"
 
 [dependencies]
 enigo = { git = "https://github.com/enigo-rs/enigo" }
-user32-sys = "0.1.2"
+user32-sys = "0.2.0"
 rand = "0.8.0"
+
+coffee = { version = "0.4", features = ["opengl"] }
