@@ -1,210 +1,48 @@
 mod clicker;
+mod support;
+
 use clicker::ClickerData;
+use imgui::*;
 
-use coffee::{
-    input::{
-        mouse::{
-            Mouse
-        }
-    },
-    graphics::{
-        Color,
-        Frame,
-        HorizontalAlignment,
-        Window,
-        WindowSettings,
-        Shape,
-        Mesh,
-        Rectangle
-    },
+fn main() {
+    let system = support::init(file!(),  &[768f64, 400f64]);
+    let mut clicker = ClickerData::new();
 
-    load::{
-        Task
-    },
-
-    Game,
-    Result,
-    Timer,
-    ui::{
-        Renderer,
-        Element,
-        Column,
-        UserInterface,
-        slider,
-        Row,
-        Text,
-        Slider,
-        Align,
-        Justify,
-    }
-};
-
-use std::ops::RangeInclusive;
-
-fn main() -> Result<()> {
-    <ClickerGUI as UserInterface>::run(WindowSettings {
-        title: String::from("RClicker"),
-        size: (768, 400),
-        resizable: false,
-        fullscreen: false,
-        maximized: false
+    system.main_loop(move |_, ui| {
+        create_ui(ui, &mut clicker);
+        clicker.handle_listeners()
     })
 }
 
-enum Message {
-    MinClicksChanged(f32),
-    MaxClicksChanged(f32),
+fn create_ui(ui: &mut Ui, clicker: &mut ClickerData) {
+    Window::new(im_str!("r clicker"))
+        .size([768.0, 400.0], Condition::Appearing)
+        .position([0.0, 0.0], Condition::Appearing)
+        .resizable(false)
+        .movable(false)
+        .build(ui, || {
+            Slider::new(im_str!("min cps"))
+                .range(8..=25)
+                .build(&ui, &mut clicker.min_cps);
 
-    HorizontalJitterIntensityChanged(f32),
-    VerticalJitterIntensityChanged(f32),
-}
+            Slider::new(im_str!("max cps"))
+                .range(5..=22)
+                .build(&ui, &mut clicker.max_cps);
 
-struct ClickerGUI {
-    data: ClickerData,
+            ui.separator();
 
-    min_cps_slider: slider::State,
-    max_cps_slider: slider::State,
+            Slider::new(im_str!("hor jitter intensity"))
+                .range(0..=20)
+                .build(&ui, &mut clicker.jitter_intensity_horizontal);
 
-    ver_jitter_intensity_slider: slider::State,
-    hor_jitter_intensity_slider: slider::State,
+            Slider::new(im_str!("ver jitter intensity"))
+                .range(0..=20)
+                .build(&ui, &mut clicker.jitter_intensity_vertical);
 
-    //toggle_button: button::State // work in progress, not supported yet.
-}
+            ui.separator();
 
-impl UserInterface for ClickerGUI {
-    type Message = Message;
-    type Renderer = Renderer;
-
-    fn react(&mut self, msg: Message, _window: &mut Window) {
-        match msg {
-            Message::MinClicksChanged(data) => {
-                self.data.min_cps = data as u64;
-            },
-
-            Message::MaxClicksChanged(data) => {
-                self.data.max_cps = data as u64;
-            },
-
-            Message::VerticalJitterIntensityChanged(data) => {
-                self.data.jitter_intensity_vertical = data as i32;
-            },
-
-            Message::HorizontalJitterIntensityChanged(data) => {
-                self.data.jitter_intensity_horizontal = data as i32;
-            }
-        }
-    }
-
-    fn layout(&mut self, window: &Window) -> Element<Message> {
-        let mut clicks = Column::new().max_width(250).spacing(20);
-        let mut jitter = Column::new().max_width(250).spacing(20);
-
-        jitter = jitter.push(
-            slider_with_label(
-                "horizontal jitter intensity: ",
-                &mut self.hor_jitter_intensity_slider,
-                0.0..=25.0,
-                self.data.jitter_intensity_horizontal as f32,
-                &ToString::to_string(&self.data.jitter_intensity_horizontal),
-                move |data| {
-                    Message::HorizontalJitterIntensityChanged(data)
-                }   
-            )
-        );
-
-        jitter = jitter.push(
-            slider_with_label(
-                "vertical jitter intensity: ",
-                &mut self.ver_jitter_intensity_slider,
-                0.0..=25.0,
-                self.data.jitter_intensity_vertical as f32,
-                &ToString::to_string(&self.data.jitter_intensity_vertical),
-                move |data| {
-                    Message::VerticalJitterIntensityChanged(data)
-                }   
-            )
-        );
-
-        clicks = clicks.push(
-            slider_with_label(
-                "minimum cps: ",
-                &mut self.min_cps_slider,
-                5.0..=25.0,
-                self.data.min_cps as f32,
-                &ToString::to_string(&self.data.min_cps),
-                move |data| {
-                    Message::MinClicksChanged(data)
-                }   
-            )
-        );
-
-        clicks = clicks.push(
-            slider_with_label(
-                "maximum cps: ",
-                &mut self.max_cps_slider,
-                5.0..=25.0,
-                self.data.max_cps as f32,
-                &ToString::to_string(&self.data.max_cps),
-                move |data| {
-                    Message::MaxClicksChanged(data)
-                }   
-            )
-        );
-        
-        Column::new()
-            .width(window.width() as u32)
-            .height(window.height() as u32)
-            .padding(20)
-            .align_items(Align::Stretch)
-            .justify_content(Justify::SpaceBetween)
-            .push(jitter)
-            .push(clicks)
-            .into()
-    }
-}
-
-impl Game for ClickerGUI {
-    type Input = Mouse;
-    type LoadingScreen = ();
-
-    fn load(_window: &Window) -> Task<ClickerGUI> {
-        Task::succeed(|| ClickerGUI {
-            data: ClickerData::new(),
-
-            min_cps_slider: slider::State::new(),
-            max_cps_slider: slider::State::new(),
-
-            hor_jitter_intensity_slider: slider::State::new(),
-            ver_jitter_intensity_slider: slider::State::new()
-        })
-    }
-
-    fn draw(&mut self, frame: &mut Frame, _timer: &Timer) {
-        frame.clear(Color {
-            r: 0.3,
-            g: 0.3,
-            b: 0.6,
-            a: 1.0,
+            ui.text(format!("clicker enabled: {}", clicker.enabled));
+            ui.text(format!("horizontal jitter enabled: {}", clicker.jitter_intensity_horizontal != 0));
+            ui.text(format!("veritcal jitter enabled: {}", clicker.jitter_intensity_vertical != 0));
         });
-        
-        self.data.handle_listeners();
-    }
-}
-
-fn slider_with_label<'a>(label: &str, state: &'a mut slider::State, range: RangeInclusive<f32>, value: f32, format: &str, on_change: fn(f32) -> Message,) -> Element<'a, Message> {
-    Column::new()
-        .spacing(10)
-        .push(Text::new(label))
-        .push(
-            Row::new()
-                .spacing(10)
-                .push(Slider::new(state, range, value, on_change))
-                .push(
-                    Text::new(format)
-                        .width(150)
-                        .height(50)
-                        .horizontal_alignment(HorizontalAlignment::Center),
-                ),
-        )
-        .into()
 }

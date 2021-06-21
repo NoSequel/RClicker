@@ -11,4 +11,9 @@ enigo = { git = "https://github.com/enigo-rs/enigo" }
 user32-sys = "0.2.0"
 rand = "0.8.0"
 
-coffee = { version = "0.4", features = ["opengl"] }
+# imgui
+imgui = "0.7.0"
+imgui-glium-renderer = "0.7.0"
+imgui-winit-support = "0.7.1"
+glium = { version = "0.29", default-features = true }
+clipboard = "0.5"
