@@ -25,6 +25,9 @@ pub struct ClickerData {
     pub min_cps: u64,
     pub max_cps: u64,
 
+    pub jitter_intensity_horizontal: i32,
+    pub jitter_intensity_vertical: i32,
+
     pub key_listeners: Rc<RefCell<Vec<RefCell<KeyListener<ClickerData>>>>>
 }
 
@@ -32,6 +35,10 @@ impl ClickerData {
     pub fn new() -> Self {
         Self {
             enabled: false,
+
+            jitter_intensity_horizontal: 12,
+            jitter_intensity_vertical: 4,
+
             min_cps: 12,
             max_cps: 15,
             enigo: Enigo::new(),
@@ -41,7 +48,9 @@ impl ClickerData {
                         key_code: 0x58,
                         callback: Box::new(| data | {
                             data.enabled = !data.enabled;
-                            thread::sleep(Duration::from_millis(120));
+                            thread::sleep(Duration::from_millis(200));
+
+                            println!("{}", data.enabled);
                         })
                     }
                 ),
@@ -51,9 +60,19 @@ impl ClickerData {
                         key_code: 0x01,
                         callback: Box::new(| data | {
                             if data.enabled {
-                                let current: u64 = rand::thread_rng().gen_range(data.min_cps..data.max_cps);
+                                let mut rand = rand::thread_rng();
+                                let current: u64 = rand.gen_range(data.min_cps..data.max_cps);
         
                                 data.enigo.mouse_up(MouseButton::Left);
+
+                                if data.jitter_intensity_horizontal != 0 {
+                                    data.enigo.mouse_move_relative(rand.gen_range(-data.jitter_intensity_horizontal..data.jitter_intensity_horizontal), 0);
+                                }
+
+                                if data.jitter_intensity_vertical != 0 {
+                                    data.enigo.mouse_move_relative(0, rand.gen_range(-data.jitter_intensity_vertical..data.jitter_intensity_vertical));
+                                }
+
                                 data.enigo.mouse_down(MouseButton::Left);
         
                                 thread::sleep(Duration::from_millis(1000 / current));
