@@ -1,5 +1,4 @@
-use std::cell::RefCell;
-use std::rc::Rc;
+use std::{cell::RefCell, rc::Rc};
 
 use enigo::{Enigo, MouseButton, MouseControllable};
 
@@ -53,7 +52,11 @@ impl ClickerData {
                     callback: Box::new(|data| {
                         if data.enabled {
                             let mut rand = rand::thread_rng();
-                            let current: u64 = rand.gen_range(data.min_cps..data.max_cps);
+                            let current: u64 = if data.min_cps != data.max_cps {
+                                rand.gen_range(data.min_cps..data.max_cps)
+                            } else { 
+                                data.max_cps 
+                            };
 
                             data.enigo.mouse_up(MouseButton::Left);
 
