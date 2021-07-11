@@ -14,6 +14,7 @@ fn main() {
     })
 }
 
+/// Formats a boolean to a String
 fn format_bool(input: bool) -> String {
     match input {
         true => "Yes",
@@ -21,6 +22,7 @@ fn format_bool(input: bool) -> String {
     }.to_owned()
 }
 
+/// Creates the UI
 fn create_ui(ui: &mut Ui, clicker: &mut ClickerData) {
 	if clicker.min_cps > clicker.max_cps {
 		clicker.min_cps = clicker.max_cps;
@@ -54,6 +56,9 @@ fn create_ui(ui: &mut Ui, clicker: &mut ClickerData) {
             Slider::new(im_str!("Debounce-Time (experimental)"))
                 .range(0..=20)
                 .build(&ui, &mut clicker.debounce_time);
+
+			ComboBox::new(im_str!("Button"))
+				.build_simple_string(&ui, &mut clicker.selected_button, &[im_str!("Left"), im_str!("Right")]);
 
             ui.separator();
 
